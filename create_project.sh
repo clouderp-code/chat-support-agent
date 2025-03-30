@@ -215,14 +215,7 @@ EOF
 create_frontend_files() {
     print_message "Creating frontend files..."
     
-    # Create .npmrc file to force specific dependency versions
-    cat << 'EOF' > frontend/.npmrc
-legacy-peer-deps=true
-strict-peer-dependencies=false
-auto-install-peers=true
-EOF
-
-    # Update package.json with fixed dependencies
+    # Create package.json with all required dependencies
     cat << 'EOF' > frontend/package.json
 {
   "name": "ai-service-desk-frontend",
@@ -231,9 +224,16 @@ EOF
   "dependencies": {
     "@emotion/react": "^11.11.1",
     "@emotion/styled": "^11.11.0",
-    "@mui/material": "^5.14.18",
     "@mui/icons-material": "^5.14.18",
+    "@mui/material": "^5.14.18",
     "@reduxjs/toolkit": "^1.9.7",
+    "@testing-library/jest-dom": "^6.1.4",
+    "@testing-library/react": "^14.1.2",
+    "@testing-library/user-event": "^14.5.1",
+    "@types/jest": "^29.5.10",
+    "@types/node": "^20.9.4",
+    "@types/react": "^18.2.38",
+    "@types/react-dom": "^18.2.17",
     "axios": "^1.6.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
@@ -241,37 +241,14 @@ EOF
     "react-router-dom": "^6.20.0",
     "react-scripts": "5.0.1",
     "socket.io-client": "^4.7.2",
+    "typescript": "^4.9.5",
     "web-vitals": "^3.5.0"
-  },
-  "devDependencies": {
-    "@testing-library/jest-dom": "^6.1.4",
-    "@testing-library/react": "^14.1.2",
-    "@types/node": "^20.9.4",
-    "@types/react": "^18.2.38",
-    "@types/react-dom": "^18.2.17",
-    "@typescript-eslint/eslint-plugin": "^6.12.0",
-    "@typescript-eslint/parser": "^6.12.0",
-    "cypress": "^13.6.0",
-    "eslint": "^8.54.0",
-    "prettier": "^3.1.0",
-    "typescript": "4.9.5",
-    "ajv": "^6.12.6",
-    "ajv-keywords": "^3.5.2",
-    "schema-utils": "^3.1.2"
-  },
-  "resolutions": {
-    "ajv": "^6.12.6",
-    "ajv-keywords": "^3.5.2",
-    "schema-utils": "^3.1.2"
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "GENERATE_SOURCEMAP=false react-scripts build",
+    "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject",
-    "lint": "eslint src",
-    "format": "prettier --write src",
-    "cypress": "cypress open"
+    "eject": "react-scripts eject"
   },
   "eslintConfig": {
     "extends": [
@@ -294,31 +271,7 @@ EOF
 }
 EOF
 
-    # Create a basic tsconfig.json
-    cat << 'EOF' > frontend/tsconfig.json
-{
-  "compilerOptions": {
-    "target": "es5",
-    "lib": ["dom", "dom.iterable", "esnext"],
-    "allowJs": true,
-    "skipLibCheck": true,
-    "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
-    "strict": true,
-    "forceConsistentCasingInFileNames": true,
-    "noFallthroughCasesInSwitch": true,
-    "module": "esnext",
-    "moduleResolution": "node",
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "noEmit": true,
-    "jsx": "react-jsx"
-  },
-  "include": ["src"]
-}
-EOF
-
-    # Create public/index.html
+    # Create index.html
     cat << 'EOF' > frontend/public/index.html
 <!DOCTYPE html>
 <html lang="en">
@@ -330,6 +283,10 @@ EOF
     <meta name="description" content="AI-Powered Service Desk Agent" />
     <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap"
+    />
     <title>AI Service Desk</title>
   </head>
   <body>
@@ -339,107 +296,666 @@ EOF
 </html>
 EOF
 
-    # Create public/manifest.json
-    cat << 'EOF' > frontend/public/manifest.json
-{
-  "short_name": "AI Service Desk",
-  "name": "AI-Powered Service Desk Agent",
-  "icons": [
-    {
-      "src": "favicon.ico",
-      "sizes": "64x64 32x32 24x24 16x16",
-      "type": "image/x-icon"
-    },
-    {
-      "src": "logo192.png",
-      "type": "image/png",
-      "sizes": "192x192"
-    },
-    {
-      "src": "logo512.png",
-      "type": "image/png",
-      "sizes": "512x512"
-    }
-  ],
-  "start_url": ".",
-  "display": "standalone",
-  "theme_color": "#000000",
-  "background_color": "#ffffff"
+    # Create pages directory and components
+    mkdir -p frontend/src/pages
+
+    # Create ChatPage.tsx
+    cat << 'EOF' > frontend/src/pages/ChatPage.tsx
+import React, { useState } from 'react';
+import {
+  Container,
+  Paper,
+  Typography,
+  TextField,
+  Button,
+  Box,
+  List,
+  ListItem,
+  ListItemText,
+} from '@mui/material';
+import SendIcon from '@mui/icons-material/Send';
+
+interface Message {
+  id: number;
+  text: string;
+  sender: 'user' | 'ai';
+  timestamp: Date;
 }
+
+const ChatPage = () => {
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      id: 1,
+      text: "Hello! How can I help you today?",
+      sender: 'ai',
+      timestamp: new Date()
+    }
+  ]);
+  const [input, setInput] = useState('');
+
+  const handleSend = () => {
+    if (!input.trim()) return;
+
+    const newMessage: Message = {
+      id: messages.length + 1,
+      text: input,
+      sender: 'user',
+      timestamp: new Date()
+    };
+
+    setMessages([...messages, newMessage]);
+    setInput('');
+
+    // Simulate AI response
+    setTimeout(() => {
+      const aiResponse: Message = {
+        id: messages.length + 2,
+        text: "I'm processing your request. How can I assist you further?",
+        sender: 'ai',
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, aiResponse]);
+    }, 1000);
+  };
+
+  return (
+    <Container maxWidth="md" sx={{ mt: 4 }}>
+      <Paper elevation={3} sx={{ height: '70vh', display: 'flex', flexDirection: 'column' }}>
+        <Box sx={{ p: 2, backgroundColor: 'primary.main', color: 'white' }}>
+          <Typography variant="h6">AI Chat Support</Typography>
+        </Box>
+        
+        <Box sx={{ flexGrow: 1, overflow: 'auto', p: 2 }}>
+          <List>
+            {messages.map((message) => (
+              <ListItem
+                key={message.id}
+                sx={{
+                  justifyContent: message.sender === 'user' ? 'flex-end' : 'flex-start',
+                  mb: 1
+                }}
+              >
+                <Paper
+                  elevation={1}
+                  sx={{
+                    p: 2,
+                    backgroundColor: message.sender === 'user' ? 'primary.light' : 'grey.100',
+                    maxWidth: '70%'
+                  }}
+                >
+                  <ListItemText
+                    primary={message.text}
+                    secondary={message.timestamp.toLocaleTimeString()}
+                  />
+                </Paper>
+              </ListItem>
+            ))}
+          </List>
+        </Box>
+
+        <Box sx={{ p: 2, backgroundColor: 'background.paper' }}>
+          <TextField
+            fullWidth
+            variant="outlined"
+            placeholder="Type your message..."
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+            InputProps={{
+              endAdornment: (
+                <Button
+                  variant="contained"
+                  endIcon={<SendIcon />}
+                  onClick={handleSend}
+                  sx={{ ml: 1 }}
+                >
+                  Send
+                </Button>
+              ),
+            }}
+          />
+        </Box>
+      </Paper>
+    </Container>
+  );
+};
+
+export default ChatPage;
 EOF
 
-    # Create public/robots.txt
-    cat << 'EOF' > frontend/public/robots.txt
-# https://www.robotstxt.org/robotstxt.html
-User-agent: *
-Disallow:
-EOF
-
-    # Create src/index.tsx
-    cat << 'EOF' > frontend/src/index.tsx
+    # Create TicketsPage.tsx
+    cat << 'EOF' > frontend/src/pages/TicketsPage.tsx
 import React from 'react';
-import ReactDOM from 'react-dom/client';
-import App from './App';
-import './index.css';
+import {
+  Container,
+  Paper,
+  Typography,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Button,
+  Box,
+  Chip,
+} from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
 
-const root = ReactDOM.createRoot(
-  document.getElementById('root') as HTMLElement
-);
+const tickets = [
+  {
+    id: 1,
+    title: 'Login Issue',
+    status: 'Open',
+    priority: 'High',
+    created: '2023-11-20',
+    updated: '2023-11-21',
+  },
+  {
+    id: 2,
+    title: 'Password Reset',
+    status: 'In Progress',
+    priority: 'Medium',
+    created: '2023-11-19',
+    updated: '2023-11-21',
+  },
+  {
+    id: 3,
+    title: 'Feature Request',
+    status: 'Closed',
+    priority: 'Low',
+    created: '2023-11-18',
+    updated: '2023-11-20',
+  },
+];
 
-root.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
-);
+const TicketsPage = () => {
+  return (
+    <Container maxWidth="lg" sx={{ mt: 4 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
+        <Typography variant="h4">Support Tickets</Typography>
+        <Button variant="contained" startIcon={<AddIcon />}>
+          New Ticket
+        </Button>
+      </Box>
+
+      <TableContainer component={Paper}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>ID</TableCell>
+              <TableCell>Title</TableCell>
+              <TableCell>Status</TableCell>
+              <TableCell>Priority</TableCell>
+              <TableCell>Created</TableCell>
+              <TableCell>Updated</TableCell>
+              <TableCell>Actions</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {tickets.map((ticket) => (
+              <TableRow key={ticket.id}>
+                <TableCell>{ticket.id}</TableCell>
+                <TableCell>{ticket.title}</TableCell>
+                <TableCell>
+                  <Chip
+                    label={ticket.status}
+                    color={
+                      ticket.status === 'Open'
+                        ? 'error'
+                        : ticket.status === 'In Progress'
+                        ? 'warning'
+                        : 'success'
+                    }
+                    size="small"
+                  />
+                </TableCell>
+                <TableCell>
+                  <Chip
+                    label={ticket.priority}
+                    color={
+                      ticket.priority === 'High'
+                        ? 'error'
+                        : ticket.priority === 'Medium'
+                        ? 'warning'
+                        : 'info'
+                    }
+                    size="small"
+                  />
+                </TableCell>
+                <TableCell>{ticket.created}</TableCell>
+                <TableCell>{ticket.updated}</TableCell>
+                <TableCell>
+                  <Button size="small" color="primary">
+                    View
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+    </Container>
+  );
+};
+
+export default TicketsPage;
 EOF
 
-    # Create src/App.tsx
+    # Create KnowledgeBasePage.tsx
+    cat << 'EOF' > frontend/src/pages/KnowledgeBasePage.tsx
+import React from 'react';
+import {
+  Container,
+  Grid,
+  Paper,
+  Typography,
+  TextField,
+  Card,
+  CardContent,
+  CardActions,
+  Button,
+  Box,
+} from '@mui/material';
+import SearchIcon from '@mui/icons-material/Search';
+
+const articles = [
+  {
+    id: 1,
+    title: 'Getting Started Guide',
+    category: 'General',
+    excerpt: 'Learn how to get started with our platform...',
+  },
+  {
+    id: 2,
+    title: 'Password Reset Process',
+    category: 'Security',
+    excerpt: 'Step-by-step guide to reset your password...',
+  },
+  {
+    id: 3,
+    title: 'Common Issues & Solutions',
+    category: 'Troubleshooting',
+    excerpt: 'Find solutions to common problems...',
+  },
+  {
+    id: 4,
+    title: 'API Documentation',
+    category: 'Development',
+    excerpt: 'Complete API reference and examples...',
+  },
+];
+
+const KnowledgeBasePage = () => {
+  return (
+    <Container maxWidth="lg" sx={{ mt: 4 }}>
+      <Typography variant="h4" gutterBottom>
+        Knowledge Base
+      </Typography>
+
+      <Box sx={{ mb: 4 }}>
+        <TextField
+          fullWidth
+          variant="outlined"
+          placeholder="Search articles..."
+          InputProps={{
+            startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} />,
+          }}
+        />
+      </Box>
+
+      <Grid container spacing={3}>
+        {articles.map((article) => (
+          <Grid item xs={12} md={6} key={article.id}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  {article.title}
+                </Typography>
+                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                  Category: {article.category}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {article.excerpt}
+                </Typography>
+              </CardContent>
+              <CardActions>
+                <Button size="small" color="primary">
+                  Read More
+                </Button>
+              </CardActions>
+            </Card>
+          </Grid>
+        ))}
+      </Grid>
+    </Container>
+  );
+};
+
+export default KnowledgeBasePage;
+EOF
+
+    # Create AnalyticsPage.tsx
+    cat << 'EOF' > frontend/src/pages/AnalyticsPage.tsx
+import React from 'react';
+import {
+  Container,
+  Grid,
+  Paper,
+  Typography,
+  Box,
+} from '@mui/material';
+
+const AnalyticsPage = () => {
+  return (
+    <Container maxWidth="lg" sx={{ mt: 4 }}>
+      <Typography variant="h4" gutterBottom>
+        Analytics Dashboard
+      </Typography>
+
+      <Grid container spacing={3}>
+        {/* Summary Cards */}
+        <Grid item xs={12} md={3}>
+          <Paper sx={{ p: 2, textAlign: 'center' }}>
+            <Typography variant="h6" gutterBottom>
+              Total Tickets
+            </Typography>
+            <Typography variant="h3" color="primary">
+              1,234
+            </Typography>
+          </Paper>
+        </Grid>
+        <Grid item xs={12} md={3}>
+          <Paper sx={{ p: 2, textAlign: 'center' }}>
+            <Typography variant="h6" gutterBottom>
+              Resolution Rate
+            </Typography>
+            <Typography variant="h3" color="success.main">
+              94%
+            </Typography>
+          </Paper>
+        </Grid>
+        <Grid item xs={12} md={3}>
+          <Paper sx={{ p: 2, textAlign: 'center' }}>
+            <Typography variant="h6" gutterBottom>
+              Avg Response Time
+            </Typography>
+            <Typography variant="h3" color="info.main">
+              2.5h
+            </Typography>
+          </Paper>
+        </Grid>
+        <Grid item xs={12} md={3}>
+          <Paper sx={{ p: 2, textAlign: 'center' }}>
+            <Typography variant="h6" gutterBottom>
+              Active Users
+            </Typography>
+            <Typography variant="h3" color="secondary.main">
+              156
+            </Typography>
+          </Paper>
+        </Grid>
+
+        {/* Charts Section */}
+        <Grid item xs={12} md={8}>
+          <Paper sx={{ p: 2 }}>
+            <Typography variant="h6" gutterBottom>
+              Ticket Trends
+            </Typography>
+            <Box sx={{ height: 300, bgcolor: 'grey.100' }}>
+              {/* Add chart component here */}
+              <Typography variant="body2" sx={{ p: 2, textAlign: 'center' }}>
+                Chart placeholder: Ticket volume over time
+              </Typography>
+            </Box>
+          </Paper>
+        </Grid>
+
+        <Grid item xs={12} md={4}>
+          <Paper sx={{ p: 2 }}>
+            <Typography variant="h6" gutterBottom>
+              Category Distribution
+            </Typography>
+            <Box sx={{ height: 300, bgcolor: 'grey.100' }}>
+              {/* Add pie chart component here */}
+              <Typography variant="body2" sx={{ p: 2, textAlign: 'center' }}>
+                Chart placeholder: Ticket categories
+              </Typography>
+            </Box>
+          </Paper>
+        </Grid>
+      </Grid>
+    </Container>
+  );
+};
+
+export default AnalyticsPage;
+EOF
+
+    # Create HomePage.tsx
+    cat << 'EOF' > frontend/src/pages/HomePage.tsx
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  Container,
+  Grid,
+  Paper,
+  Typography,
+  Box,
+  Button,
+} from '@mui/material';
+import {
+  Chat as ChatIcon,
+  Assignment as TicketIcon,
+  Book as KnowledgeIcon,
+  Analytics as AnalyticsIcon,
+} from '@mui/icons-material';
+
+const HomePage = () => {
+  const navigate = useNavigate();
+
+  return (
+    <Container maxWidth="lg" sx={{ mt: 4 }}>
+      <Grid container spacing={3}>
+        {/* Welcome Section */}
+        <Grid item xs={12}>
+          <Paper sx={{ p: 3, textAlign: 'center' }}>
+            <Typography variant="h4" gutterBottom>
+              Welcome to AI Service Desk
+            </Typography>
+            <Typography variant="subtitle1" color="text.secondary">
+              Your 24/7 Intelligent Support Assistant
+            </Typography>
+          </Paper>
+        </Grid>
+
+        {/* Quick Actions */}
+        <Grid item xs={12} md={3}>
+          <Paper 
+            sx={{ 
+              p: 2, 
+              textAlign: 'center', 
+              height: '100%',
+              cursor: 'pointer',
+              '&:hover': { bgcolor: 'action.hover' }
+            }}
+            onClick={() => navigate('/chat')}
+          >
+            <ChatIcon sx={{ fontSize: 40, color: 'primary.main', mb: 1 }} />
+            <Typography variant="h6">Start Chat</Typography>
+            <Typography variant="body2" color="text.secondary">
+              Get instant support
+            </Typography>
+          </Paper>
+        </Grid>
+
+        <Grid item xs={12} md={3}>
+          <Paper 
+            sx={{ 
+              p: 2, 
+              textAlign: 'center', 
+              height: '100%',
+              cursor: 'pointer',
+              '&:hover': { bgcolor: 'action.hover' }
+            }}
+            onClick={() => navigate('/tickets')}
+          >
+            <TicketIcon sx={{ fontSize: 40, color: 'secondary.main', mb: 1 }} />
+            <Typography variant="h6">Submit Ticket</Typography>
+            <Typography variant="body2" color="text.secondary">
+              Create support ticket
+            </Typography>
+          </Paper>
+        </Grid>
+
+        <Grid item xs={12} md={3}>
+          <Paper 
+            sx={{ 
+              p: 2, 
+              textAlign: 'center', 
+              height: '100%',
+              cursor: 'pointer',
+              '&:hover': { bgcolor: 'action.hover' }
+            }}
+            onClick={() => navigate('/knowledge')}
+          >
+            <KnowledgeIcon sx={{ fontSize: 40, color: 'success.main', mb: 1 }} />
+            <Typography variant="h6">Knowledge Base</Typography>
+            <Typography variant="body2" color="text.secondary">
+              Browse articles
+            </Typography>
+          </Paper>
+        </Grid>
+
+        <Grid item xs={12} md={3}>
+          <Paper 
+            sx={{ 
+              p: 2, 
+              textAlign: 'center', 
+              height: '100%',
+              cursor: 'pointer',
+              '&:hover': { bgcolor: 'action.hover' }
+            }}
+            onClick={() => navigate('/analytics')}
+          >
+            <AnalyticsIcon sx={{ fontSize: 40, color: 'info.main', mb: 1 }} />
+            <Typography variant="h6">Analytics</Typography>
+            <Typography variant="body2" color="text.secondary">
+              View insights
+            </Typography>
+          </Paper>
+        </Grid>
+
+        {/* Stats Section */}
+        <Grid item xs={12}>
+          <Paper sx={{ p: 3 }}>
+            <Typography variant="h5" gutterBottom>
+              System Status
+            </Typography>
+            <Grid container spacing={2}>
+              <Grid item xs={3}>
+                <Typography variant="h6">Active Chats</Typography>
+                <Typography variant="h4" color="primary">12</Typography>
+              </Grid>
+              <Grid item xs={3}>
+                <Typography variant="h6">Open Tickets</Typography>
+                <Typography variant="h4" color="secondary">25</Typography>
+              </Grid>
+              <Grid item xs={3}>
+                <Typography variant="h6">KB Articles</Typography>
+                <Typography variant="h4" color="success.main">156</Typography>
+              </Grid>
+              <Grid item xs={3}>
+                <Typography variant="h6">Response Rate</Typography>
+                <Typography variant="h4" color="info.main">98%</Typography>
+              </Grid>
+            </Grid>
+          </Paper>
+        </Grid>
+      </Grid>
+    </Container>
+  );
+};
+
+export default HomePage;
+EOF
+
+    # Update App.tsx with proper routing
     cat << 'EOF' > frontend/src/App.tsx
 import React from 'react';
+import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
+import {
+  AppBar,
+  Toolbar,
+  Typography,
+  Button,
+  Box,
+} from '@mui/material';
+
+import HomePage from './pages/HomePage';
+import ChatPage from './pages/ChatPage';
+import TicketsPage from './pages/TicketsPage';
+import KnowledgeBasePage from './pages/KnowledgeBasePage';
+import AnalyticsPage from './pages/AnalyticsPage';
 
 const theme = createTheme({
   palette: {
     mode: 'light',
+    primary: {
+      main: '#1976d2',
+    },
+    secondary: {
+      main: '#dc004e',
+    },
   },
 });
+
+function Navigation() {
+  const navigate = useNavigate();
+
+  return (
+    <AppBar position="static">
+      <Toolbar>
+        <Typography 
+          variant="h6" 
+          component="div" 
+          sx={{ flexGrow: 1, cursor: 'pointer' }}
+          onClick={() => navigate('/')}
+        >
+          AI Service Desk
+        </Typography>
+        <Button color="inherit" onClick={() => navigate('/chat')}>Chat</Button>
+        <Button color="inherit" onClick={() => navigate('/tickets')}>Tickets</Button>
+        <Button color="inherit" onClick={() => navigate('/knowledge')}>Knowledge Base</Button>
+        <Button color="inherit" onClick={() => navigate('/analytics')}>Analytics</Button>
+      </Toolbar>
+    </AppBar>
+  );
+}
 
 function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <div>
-        <h1>AI Service Desk</h1>
-        <p>Welcome to the AI-Powered Service Desk Agent</p>
-      </div>
+      <Router>
+        <Box sx={{ flexGrow: 1 }}>
+          <Navigation />
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/chat" element={<ChatPage />} />
+            <Route path="/tickets" element={<TicketsPage />} />
+            <Route path="/knowledge" element={<KnowledgeBasePage />} />
+            <Route path="/analytics" element={<AnalyticsPage />} />
+          </Routes>
+        </Box>
+      </Router>
     </ThemeProvider>
   );
 }
 
 export default App;
-EOF
-
-    # Create src/index.css
-    cat << 'EOF' > frontend/src/index.css
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
-}
-EOF
-
-    # Create src/react-app-env.d.ts
-    cat << 'EOF' > frontend/src/react-app-env.d.ts
-/// <reference types="react-scripts" />
 EOF
 
     print_message "Created frontend files"
