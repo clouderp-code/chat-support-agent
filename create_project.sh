@@ -215,336 +215,16 @@ EOF
 create_frontend_files() {
     print_message "Creating frontend files..."
     
-    # Create package.json with all required dependencies
-    cat << 'EOF' > frontend/package.json
-{
-  "name": "ai-service-desk-frontend",
-  "version": "0.1.0",
-  "private": true,
-  "dependencies": {
-    "@emotion/react": "^11.11.1",
-    "@emotion/styled": "^11.11.0",
-    "@mui/icons-material": "^5.14.18",
-    "@mui/material": "^5.14.18",
-    "@reduxjs/toolkit": "^1.9.7",
-    "@testing-library/jest-dom": "^6.1.4",
-    "@testing-library/react": "^14.1.2",
-    "@testing-library/user-event": "^14.5.1",
-    "@types/jest": "^29.5.10",
-    "@types/node": "^20.9.4",
-    "@types/react": "^18.2.38",
-    "@types/react-dom": "^18.2.17",
-    "axios": "^1.6.2",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "react-redux": "^8.1.3",
-    "react-router-dom": "^6.20.0",
-    "react-scripts": "5.0.1",
-    "socket.io-client": "^4.7.2",
-    "typescript": "^4.9.5",
-    "web-vitals": "^3.5.0"
-  },
-  "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject"
-  },
-  "eslintConfig": {
-    "extends": [
-      "react-app",
-      "react-app/jest"
-    ]
-  },
-  "browserslist": {
-    "production": [
-      ">0.2%",
-      "not dead",
-      "not op_mini all"
-    ],
-    "development": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version"
-    ]
-  }
-}
-EOF
-
-    # Create index.html
-    cat << 'EOF' > frontend/public/index.html
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#000000" />
-    <meta name="description" content="AI-Powered Service Desk Agent" />
-    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
-    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
-    <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap"
-    />
-    <title>AI Service Desk</title>
-  </head>
-  <body>
-    <noscript>You need to enable JavaScript to run this app.</noscript>
-    <div id="root"></div>
-  </body>
-</html>
-EOF
-
-    # Create pages directory and components
+    # Create necessary directories
     mkdir -p frontend/src/pages
-
-    # Create ChatPage.tsx
-    cat << 'EOF' > frontend/src/pages/ChatPage.tsx
+    mkdir -p frontend/src/components/Layout
+    mkdir -p frontend/src/components/Chat
+    mkdir -p frontend/src/components/Dashboard
+    
+    # Create ArticleDetailPage.tsx in the correct location
+    cat << 'EOF' > frontend/src/pages/ArticleDetailPage.tsx
 import React, { useState } from 'react';
-import {
-  Container,
-  Paper,
-  Typography,
-  TextField,
-  Button,
-  Box,
-  List,
-  ListItem,
-  ListItemText,
-} from '@mui/material';
-import SendIcon from '@mui/icons-material/Send';
-
-interface Message {
-  id: number;
-  text: string;
-  sender: 'user' | 'ai';
-  timestamp: Date;
-}
-
-const ChatPage = () => {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: 1,
-      text: "Hello! How can I help you today?",
-      sender: 'ai',
-      timestamp: new Date()
-    }
-  ]);
-  const [input, setInput] = useState('');
-
-  const handleSend = () => {
-    if (!input.trim()) return;
-
-    const newMessage: Message = {
-      id: messages.length + 1,
-      text: input,
-      sender: 'user',
-      timestamp: new Date()
-    };
-
-    setMessages([...messages, newMessage]);
-    setInput('');
-
-    // Simulate AI response
-    setTimeout(() => {
-      const aiResponse: Message = {
-        id: messages.length + 2,
-        text: "I'm processing your request. How can I assist you further?",
-        sender: 'ai',
-        timestamp: new Date()
-      };
-      setMessages(prev => [...prev, aiResponse]);
-    }, 1000);
-  };
-
-  return (
-    <Container maxWidth="md" sx={{ mt: 4 }}>
-      <Paper elevation={3} sx={{ height: '70vh', display: 'flex', flexDirection: 'column' }}>
-        <Box sx={{ p: 2, backgroundColor: 'primary.main', color: 'white' }}>
-          <Typography variant="h6">AI Chat Support</Typography>
-        </Box>
-        
-        <Box sx={{ flexGrow: 1, overflow: 'auto', p: 2 }}>
-          <List>
-            {messages.map((message) => (
-              <ListItem
-                key={message.id}
-                sx={{
-                  justifyContent: message.sender === 'user' ? 'flex-end' : 'flex-start',
-                  mb: 1
-                }}
-              >
-                <Paper
-                  elevation={1}
-                  sx={{
-                    p: 2,
-                    backgroundColor: message.sender === 'user' ? 'primary.light' : 'grey.100',
-                    maxWidth: '70%'
-                  }}
-                >
-                  <ListItemText
-                    primary={message.text}
-                    secondary={message.timestamp.toLocaleTimeString()}
-                  />
-                </Paper>
-              </ListItem>
-            ))}
-          </List>
-        </Box>
-
-        <Box sx={{ p: 2, backgroundColor: 'background.paper' }}>
-          <TextField
-            fullWidth
-            variant="outlined"
-            placeholder="Type your message..."
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-            InputProps={{
-              endAdornment: (
-                <Button
-                  variant="contained"
-                  endIcon={<SendIcon />}
-                  onClick={handleSend}
-                  sx={{ ml: 1 }}
-                >
-                  Send
-                </Button>
-              ),
-            }}
-          />
-        </Box>
-      </Paper>
-    </Container>
-  );
-};
-
-export default ChatPage;
-EOF
-
-    # Create TicketsPage.tsx
-    cat << 'EOF' > frontend/src/pages/TicketsPage.tsx
-import React from 'react';
-import {
-  Container,
-  Paper,
-  Typography,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Button,
-  Box,
-  Chip,
-} from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
-
-const tickets = [
-  {
-    id: 1,
-    title: 'Login Issue',
-    status: 'Open',
-    priority: 'High',
-    created: '2023-11-20',
-    updated: '2023-11-21',
-  },
-  {
-    id: 2,
-    title: 'Password Reset',
-    status: 'In Progress',
-    priority: 'Medium',
-    created: '2023-11-19',
-    updated: '2023-11-21',
-  },
-  {
-    id: 3,
-    title: 'Feature Request',
-    status: 'Closed',
-    priority: 'Low',
-    created: '2023-11-18',
-    updated: '2023-11-20',
-  },
-];
-
-const TicketsPage = () => {
-  return (
-    <Container maxWidth="lg" sx={{ mt: 4 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-        <Typography variant="h4">Support Tickets</Typography>
-        <Button variant="contained" startIcon={<AddIcon />}>
-          New Ticket
-        </Button>
-      </Box>
-
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>ID</TableCell>
-              <TableCell>Title</TableCell>
-              <TableCell>Status</TableCell>
-              <TableCell>Priority</TableCell>
-              <TableCell>Created</TableCell>
-              <TableCell>Updated</TableCell>
-              <TableCell>Actions</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {tickets.map((ticket) => (
-              <TableRow key={ticket.id}>
-                <TableCell>{ticket.id}</TableCell>
-                <TableCell>{ticket.title}</TableCell>
-                <TableCell>
-                  <Chip
-                    label={ticket.status}
-                    color={
-                      ticket.status === 'Open'
-                        ? 'error'
-                        : ticket.status === 'In Progress'
-                        ? 'warning'
-                        : 'success'
-                    }
-                    size="small"
-                  />
-                </TableCell>
-                <TableCell>
-                  <Chip
-                    label={ticket.priority}
-                    color={
-                      ticket.priority === 'High'
-                        ? 'error'
-                        : ticket.priority === 'Medium'
-                        ? 'warning'
-                        : 'info'
-                    }
-                    size="small"
-                  />
-                </TableCell>
-                <TableCell>{ticket.created}</TableCell>
-                <TableCell>{ticket.updated}</TableCell>
-                <TableCell>
-                  <Button size="small" color="primary">
-                    View
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
-    </Container>
-  );
-};
-
-export default TicketsPage;
-EOF
-
-    # Create KnowledgeBasePage.tsx
-    cat << 'EOF' > frontend/src/pages/KnowledgeBasePage.tsx
-import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Container,
   Grid,
@@ -587,6 +267,15 @@ const articles = [
 ];
 
 const KnowledgeBasePage = () => {
+  const navigate = useNavigate();
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const filteredArticles = articles.filter(article =>
+    article.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    article.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    article.excerpt.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <Container maxWidth="lg" sx={{ mt: 4 }}>
       <Typography variant="h4" gutterBottom>
@@ -598,6 +287,8 @@ const KnowledgeBasePage = () => {
           fullWidth
           variant="outlined"
           placeholder="Search articles..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
           InputProps={{
             startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} />,
           }}
@@ -605,7 +296,7 @@ const KnowledgeBasePage = () => {
       </Box>
 
       <Grid container spacing={3}>
-        {articles.map((article) => (
+        {filteredArticles.map((article) => (
           <Grid item xs={12} md={6} key={article.id}>
             <Card>
               <CardContent>
@@ -620,7 +311,11 @@ const KnowledgeBasePage = () => {
                 </Typography>
               </CardContent>
               <CardActions>
-                <Button size="small" color="primary">
+                <Button 
+                  size="small" 
+                  color="primary"
+                  onClick={() => navigate(`/knowledge/article/${article.id}`)}
+                >
                   Read More
                 </Button>
               </CardActions>
@@ -635,104 +330,7 @@ const KnowledgeBasePage = () => {
 export default KnowledgeBasePage;
 EOF
 
-    # Create AnalyticsPage.tsx
-    cat << 'EOF' > frontend/src/pages/AnalyticsPage.tsx
-import React from 'react';
-import {
-  Container,
-  Grid,
-  Paper,
-  Typography,
-  Box,
-} from '@mui/material';
-
-const AnalyticsPage = () => {
-  return (
-    <Container maxWidth="lg" sx={{ mt: 4 }}>
-      <Typography variant="h4" gutterBottom>
-        Analytics Dashboard
-      </Typography>
-
-      <Grid container spacing={3}>
-        {/* Summary Cards */}
-        <Grid item xs={12} md={3}>
-          <Paper sx={{ p: 2, textAlign: 'center' }}>
-            <Typography variant="h6" gutterBottom>
-              Total Tickets
-            </Typography>
-            <Typography variant="h3" color="primary">
-              1,234
-            </Typography>
-          </Paper>
-        </Grid>
-        <Grid item xs={12} md={3}>
-          <Paper sx={{ p: 2, textAlign: 'center' }}>
-            <Typography variant="h6" gutterBottom>
-              Resolution Rate
-            </Typography>
-            <Typography variant="h3" color="success.main">
-              94%
-            </Typography>
-          </Paper>
-        </Grid>
-        <Grid item xs={12} md={3}>
-          <Paper sx={{ p: 2, textAlign: 'center' }}>
-            <Typography variant="h6" gutterBottom>
-              Avg Response Time
-            </Typography>
-            <Typography variant="h3" color="info.main">
-              2.5h
-            </Typography>
-          </Paper>
-        </Grid>
-        <Grid item xs={12} md={3}>
-          <Paper sx={{ p: 2, textAlign: 'center' }}>
-            <Typography variant="h6" gutterBottom>
-              Active Users
-            </Typography>
-            <Typography variant="h3" color="secondary.main">
-              156
-            </Typography>
-          </Paper>
-        </Grid>
-
-        {/* Charts Section */}
-        <Grid item xs={12} md={8}>
-          <Paper sx={{ p: 2 }}>
-            <Typography variant="h6" gutterBottom>
-              Ticket Trends
-            </Typography>
-            <Box sx={{ height: 300, bgcolor: 'grey.100' }}>
-              {/* Add chart component here */}
-              <Typography variant="body2" sx={{ p: 2, textAlign: 'center' }}>
-                Chart placeholder: Ticket volume over time
-              </Typography>
-            </Box>
-          </Paper>
-        </Grid>
-
-        <Grid item xs={12} md={4}>
-          <Paper sx={{ p: 2 }}>
-            <Typography variant="h6" gutterBottom>
-              Category Distribution
-            </Typography>
-            <Box sx={{ height: 300, bgcolor: 'grey.100' }}>
-              {/* Add pie chart component here */}
-              <Typography variant="body2" sx={{ p: 2, textAlign: 'center' }}>
-                Chart placeholder: Ticket categories
-              </Typography>
-            </Box>
-          </Paper>
-        </Grid>
-      </Grid>
-    </Container>
-  );
-};
-
-export default AnalyticsPage;
-EOF
-
-    # Create HomePage.tsx
+    # Create other files in their correct locations
     cat << 'EOF' > frontend/src/pages/HomePage.tsx
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -880,85 +478,181 @@ const HomePage = () => {
 export default HomePage;
 EOF
 
-    # Update App.tsx with proper routing
-    cat << 'EOF' > frontend/src/App.tsx
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
+    cat << 'EOF' > frontend/src/pages/ChatPage.tsx
+import React, { useState } from 'react';
 import {
-  AppBar,
-  Toolbar,
+  Container,
+  Paper,
   Typography,
+  TextField,
   Button,
   Box,
+  List,
+  ListItem,
+  ListItemText,
 } from '@mui/material';
+import SendIcon from '@mui/icons-material/Send';
 
-import HomePage from './pages/HomePage';
-import ChatPage from './pages/ChatPage';
-import TicketsPage from './pages/TicketsPage';
-import KnowledgeBasePage from './pages/KnowledgeBasePage';
-import AnalyticsPage from './pages/AnalyticsPage';
-
-const theme = createTheme({
-  palette: {
-    mode: 'light',
-    primary: {
-      main: '#1976d2',
-    },
-    secondary: {
-      main: '#dc004e',
-    },
-  },
-});
-
-function Navigation() {
-  const navigate = useNavigate();
-
-  return (
-    <AppBar position="static">
-      <Toolbar>
-        <Typography 
-          variant="h6" 
-          component="div" 
-          sx={{ flexGrow: 1, cursor: 'pointer' }}
-          onClick={() => navigate('/')}
-        >
-          AI Service Desk
-        </Typography>
-        <Button color="inherit" onClick={() => navigate('/chat')}>Chat</Button>
-        <Button color="inherit" onClick={() => navigate('/tickets')}>Tickets</Button>
-        <Button color="inherit" onClick={() => navigate('/knowledge')}>Knowledge Base</Button>
-        <Button color="inherit" onClick={() => navigate('/analytics')}>Analytics</Button>
-      </Toolbar>
-    </AppBar>
-  );
+interface Message {
+  id: number;
+  text: string;
+  sender: 'user' | 'ai';
+  timestamp: Date;
 }
 
-function App() {
+const ChatPage = () => {
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      id: 1,
+      text: "Hello! How can I help you today?",
+      sender: 'ai',
+      timestamp: new Date()
+    }
+  ]);
+  const [input, setInput] = useState('');
+
+  const handleSend = () => {
+    if (!input.trim()) return;
+
+    const newMessage: Message = {
+      id: messages.length + 1,
+      text: input,
+      sender: 'user',
+      timestamp: new Date()
+    };
+
+    setMessages([...messages, newMessage]);
+    setInput('');
+
+    // Simulate AI response
+    setTimeout(() => {
+      const aiResponse: Message = {
+        id: messages.length + 2,
+        text: "I'm processing your request. How can I assist you further?",
+        sender: 'ai',
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, aiResponse]);
+    }, 1000);
+  };
+
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <Router>
-        <Box sx={{ flexGrow: 1 }}>
-          <Navigation />
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/chat" element={<ChatPage />} />
-            <Route path="/tickets" element={<TicketsPage />} />
-            <Route path="/knowledge" element={<KnowledgeBasePage />} />
-            <Route path="/analytics" element={<AnalyticsPage />} />
-          </Routes>
+    <Container maxWidth="md" sx={{ mt: 4 }}>
+      <Paper elevation={3} sx={{ height: '70vh', display: 'flex', flexDirection: 'column' }}>
+        <Box sx={{ p: 2, backgroundColor: 'primary.main', color: 'white' }}>
+          <Typography variant="h6">AI Chat Support</Typography>
         </Box>
-      </Router>
-    </ThemeProvider>
-  );
-}
+        
+        <Box sx={{ flexGrow: 1, overflow: 'auto', p: 2 }}>
+          <List>
+            {messages.map((message) => (
+              <ListItem
+                key={message.id}
+                sx={{
+                  justifyContent: message.sender === 'user' ? 'flex-end' : 'flex-start',
+                  mb: 1
+                }}
+              >
+                <Paper
+                  elevation={1}
+                  sx={{
+                    p: 2,
+                    backgroundColor: message.sender === 'user' ? 'primary.light' : 'grey.100',
+                    maxWidth: '70%'
+                  }}
+                >
+                  <ListItemText
+                    primary={message.text}
+                    secondary={message.timestamp.toLocaleTimeString()}
+                  />
+                </Paper>
+              </ListItem>
+            ))}
+          </List>
+        </Box>
 
-export default App;
+        <Box sx={{ p: 2, backgroundColor: 'background.paper' }}>
+          <TextField
+            fullWidth
+            variant="outlined"
+            placeholder="Type your message..."
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+            InputProps={{
+              endAdornment: (
+                <Button
+                  variant="contained"
+                  endIcon={<SendIcon />}
+                  onClick={handleSend}
+                  sx={{ ml: 1 }}
+                >
+                  Send
+                </Button>
+              ),
+            }}
+          />
+        </Box>
+      </Paper>
+    </Container>
+  );
+};
+
+export default ChatPage;
 EOF
 
-    print_message "Created frontend files"
+    # Update the Dockerfile to handle the file structure correctly
+    cat << 'EOF' > frontend/Dockerfile
+# Build stage
+FROM node:16-alpine as build
+
+WORKDIR /app
+
+# Copy package files and config
+COPY package*.json ./
+COPY tsconfig.json ./
+
+# Install dependencies
+RUN npm install
+
+# Copy the source code
+COPY public/ public/
+COPY src/ src/
+
+# Build the application
+RUN npm run build
+
+# Production stage
+FROM nginx:alpine
+
+# Copy built assets from build stage
+COPY --from=build /app/build /usr/share/nginx/html
+
+# Copy nginx configuration if needed
+# COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]
+EOF
+
+    # Create a .dockerignore file
+    cat << 'EOF' > frontend/.dockerignore
+node_modules
+build
+.git
+.gitignore
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+EOF
+
+    print_message "Created frontend files with proper structure"
 }
 
 # Create infrastructure files

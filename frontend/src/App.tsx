@@ -15,6 +15,7 @@ import ChatPage from './pages/ChatPage';
 import TicketsPage from './pages/TicketsPage';
 import KnowledgeBasePage from './pages/KnowledgeBasePage';
 import AnalyticsPage from './pages/AnalyticsPage';
+import ArticleDetailPage from './pages/ArticleDetailPage';
 
 const theme = createTheme({
   palette: {
@@ -63,6 +64,7 @@ function App() {
             <Route path="/chat" element={<ChatPage />} />
             <Route path="/tickets" element={<TicketsPage />} />
             <Route path="/knowledge" element={<KnowledgeBasePage />} />
+            <Route path="/knowledge/article/:id" element={<ArticleDetailPage />} />
             <Route path="/analytics" element={<AnalyticsPage />} />
           </Routes>
         </Box>
