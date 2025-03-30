@@ -1,105 +1,111 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import {
   Container,
-  Grid,
   Paper,
   Typography,
-  TextField,
-  Card,
-  CardContent,
-  CardActions,
-  Button,
   Box,
+  Breadcrumbs,
+  Link,
+  Button,
 } from '@mui/material';
-import SearchIcon from '@mui/icons-material/Search';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
-const articles = [
-  {
-    id: 1,
-    title: 'Getting Started Guide',
-    category: 'General',
-    excerpt: 'Learn how to get started with our platform...',
-  },
-  {
-    id: 2,
-    title: 'Password Reset Process',
-    category: 'Security',
-    excerpt: 'Step-by-step guide to reset your password...',
-  },
-  {
-    id: 3,
-    title: 'Common Issues & Solutions',
-    category: 'Troubleshooting',
-    excerpt: 'Find solutions to common problems...',
-  },
-  {
-    id: 4,
-    title: 'API Documentation',
-    category: 'Development',
-    excerpt: 'Complete API reference and examples...',
-  },
-];
+interface Article {
+  id: number;
+  title: string;
+  category: string;
+  content: string;
+  author: string;
+  date: string;
+}
 
-const KnowledgeBasePage = () => {
+const ArticleDetailPage: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [searchTerm, setSearchTerm] = useState('');
 
-  const filteredArticles = articles.filter(article =>
-    article.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    article.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    article.excerpt.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Mock article data - in a real app, this would come from an API
+  const article: Article = {
+    id: Number(id),
+    title: 'Understanding Service Desk Best Practices',
+    category: 'Best Practices',
+    content: `
+      Service desk best practices are essential for maintaining high-quality customer support.
+      
+      Key Points:
+      1. Quick Response Times
+      Responding to customer inquiries promptly is crucial. Aim to acknowledge tickets within 
+      the first hour of submission.
+
+      2. Clear Communication
+      Use simple, clear language when communicating with customers. Avoid technical jargon 
+      unless necessary, and explain complex terms when they must be used.
+
+      3. Proper Ticket Management
+      Maintain organized ticket queues and use appropriate prioritization. Critical issues 
+      should be escalated immediately, while routine requests can be handled in order of receipt.
+
+      4. Knowledge Base Maintenance
+      Regularly update the knowledge base with new solutions and common issues. This helps 
+      both customers and service desk agents find answers quickly.
+
+      5. Continuous Improvement
+      Regular review of service desk metrics and customer feedback helps identify areas for 
+      improvement and optimization.
+    `,
+    author: 'John Smith',
+    date: '2024-02-15',
+  };
+
+  const handleBack = () => {
+    navigate('/knowledge');
+  };
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4 }}>
-      <Typography variant="h4" gutterBottom>
-        Knowledge Base
-      </Typography>
-
+    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
       <Box sx={{ mb: 4 }}>
-        <TextField
-          fullWidth
-          variant="outlined"
-          placeholder="Search articles..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          InputProps={{
-            startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} />,
-          }}
-        />
+        <Button
+          startIcon={<ArrowBackIcon />}
+          onClick={handleBack}
+          sx={{ mb: 2 }}
+        >
+          Back to Knowledge Base
+        </Button>
+        <Breadcrumbs aria-label="breadcrumb">
+          <Link color="inherit" href="/" onClick={(e) => {
+            e.preventDefault();
+            navigate('/');
+          }}>
+            Home
+          </Link>
+          <Link color="inherit" href="/knowledge" onClick={(e) => {
+            e.preventDefault();
+            navigate('/knowledge');
+          }}>
+            Knowledge Base
+          </Link>
+          <Typography color="text.primary">{article.title}</Typography>
+        </Breadcrumbs>
       </Box>
 
-      <Grid container spacing={3}>
-        {filteredArticles.map((article) => (
-          <Grid item xs={12} md={6} key={article.id}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  {article.title}
-                </Typography>
-                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                  Category: {article.category}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {article.excerpt}
-                </Typography>
-              </CardContent>
-              <CardActions>
-                <Button 
-                  size="small" 
-                  color="primary"
-                  onClick={() => navigate(`/knowledge/article/${article.id}`)}
-                >
-                  Read More
-                </Button>
-              </CardActions>
-            </Card>
-          </Grid>
-        ))}
-      </Grid>
+      <Paper sx={{ p: 4 }}>
+        <Typography variant="h4" gutterBottom>
+          {article.title}
+        </Typography>
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="subtitle1" color="text.secondary">
+            Category: {article.category}
+          </Typography>
+          <Typography variant="subtitle2" color="text.secondary">
+            By {article.author} | {article.date}
+          </Typography>
+        </Box>
+        <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap' }}>
+          {article.content}
+        </Typography>
+      </Paper>
     </Container>
   );
 };
 
-export default KnowledgeBasePage;
+export default ArticleDetailPage;
