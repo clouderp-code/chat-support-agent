@@ -1,34 +1,35 @@
-FROM python:3.11.11-slim
+FROM python:3.11-slim
 
 WORKDIR /app
 
 # Install system dependencies
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
+RUN apt-get update && apt-get install -y \
+    curl \
     gcc \
-    postgresql-client \
-    libpq-dev \
+    python3-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Create and activate virtual environment
-RUN python -m venv /opt/venv
-ENV PATH="/opt/venv/bin:$PATH"
+# Create cache directory with proper permissions
+RUN mkdir -p /root/.cache/huggingface && \
+    chmod -R 777 /root/.cache
 
-# Install Python dependencies
+# Set environment variable for transformers cache
+ENV TRANSFORMERS_CACHE=/root/.cache/huggingface
+ENV HF_HOME=/root/.cache/huggingface
+
+# Copy requirements first to leverage Docker cache
 COPY requirements.txt .
-RUN pip install --no-cache-dir -U pip setuptools wheel && \
+
+# Clean install of dependencies
+RUN pip cache purge && \
     pip install --no-cache-dir -r requirements.txt
 
-# Copy the application code
-COPY main.py .
-COPY app app/
-COPY tests tests/
+# Copy the rest of the application
+COPY . .
 
-# Set Python path
+# Set environment variables
 ENV PYTHONPATH=/app
+ENV DOCKER_ENV=1
+ENV PYTHONUNBUFFERED=1
 
-# Expose the port the app runs on
-EXPOSE 8000
-
-# Command to run the application
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload", "--log-level", "debug"]
