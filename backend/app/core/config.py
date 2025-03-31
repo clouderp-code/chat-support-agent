@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List
 from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
@@ -15,22 +15,6 @@ class Settings(BaseSettings):
     POSTGRES_DB: str = "ai_service_desk"
     POSTGRES_USER: str = "postgres"
     POSTGRES_PASSWORD: str = ""
-    
-    # Vector store settings
-    MILVUS_HOST: str = "localhost"
-    MILVUS_PORT: int = 19530
-    
-    # Redis settings
-    REDIS_HOST: str = "localhost"
-    REDIS_PORT: int = 6379
-    
-    # Chat settings
-    MAX_CHAT_MEMORY: int = 50
-    OPENAI_API_KEY: str
-    
-    # Google Drive settings
-    GOOGLE_DRIVE_CREDENTIALS: str  # JSON string of service account credentials
-    GOOGLE_DRIVE_FOLDER_ID: str
     
     class Config:
         case_sensitive = True

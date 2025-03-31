@@ -2,171 +2,59 @@ version: '3.8'
 
 services:
   backend:
-    build: ./backend
-    container_name: chat-support-agent-backend
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
     ports:
       - "8000:8000"
     environment:
-      - DOCKER_ENV=1
-      - PYTHONUNBUFFERED=1  # Enable real-time Python logging
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - GOOGLE_DRIVE_CREDENTIALS=${GOOGLE_DRIVE_CREDENTIALS}
-      - GOOGLE_DRIVE_FOLDER_ID=${GOOGLE_DRIVE_FOLDER_ID}
-      - TRANSFORMERS_CACHE=/root/.cache/huggingface
-      - HF_HOME=/root/.cache/huggingface
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres123
-      - POSTGRES_DB=chat_support
-      - POSTGRES_HOST=db
-      - MILVUS_HOST=milvus
-      - MILVUS_PORT=19530
-      - DATABASE_URL=postgresql://postgres@db:5432/chat_support
+      - POSTGRES_SERVER=db
+      - REDIS_HOST=redis
     env_file:
       - .env
-    networks:
-      - default
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 60s  # Increased start period to allow for model loading
-    volumes:
-      - ./backend:/app
-      - huggingface_cache:/root/.cache/huggingface
     depends_on:
-      db:
-        condition: service_healthy
-      milvus:
-        condition: service_healthy
-    command: >
-      sh -c "uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --log-level debug"
+      - db
+      - redis
 
   frontend:
-    build: 
+    build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: chat-support-agent-frontend
     ports:
-      - "3000:3000"
+      - "3000:80"
     environment:
       - REACT_APP_API_URL=http://localhost:8000
     depends_on:
       - backend
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000 || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
 
   db:
-    container_name: chat-support-agent-db
-    image: postgres:13
+    image: postgres:15-alpine
     environment:
-      - POSTGRES_HOST_AUTH_METHOD=trust  # Allow connections without password
-      - POSTGRES_USER=postgres
-      - POSTGRES_DB=chat_support
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./init-db.sh:/docker-entrypoint-initdb.d/init-db.sh  # Add initialization script
     ports:
       - "5432:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - default
 
   redis:
-    image: redis:alpine
-    container_name: chat-support-agent-redis
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 3s
-      retries: 3
-
-  milvus:
-    container_name: chat-support-agent-milvus
-    image: milvusdb/milvus:v2.3.3
-    command: ["milvus", "run", "standalone"]
-    environment:
-      - ETCD_ENDPOINTS=etcd:2379
-      - MINIO_ADDRESS=minio:9000
-    volumes:
-      - milvus_data:/var/lib/milvus
-    depends_on:
-      etcd:
-        condition: service_healthy
-      minio:
-        condition: service_healthy
+    image: redis:7-alpine
     ports:
-      - "19530:19530"
-      - "9091:9091"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9091/healthz"]
-      interval: 30s
-      timeout: 20s
-      retries: 3
-      start_period: 40s
-
-  etcd:
-    container_name: chat-support-agent-etcd
-    image: quay.io/coreos/etcd:v3.5.5
-    environment:
-      - ETCD_AUTO_COMPACTION_MODE=revision
-      - ETCD_AUTO_COMPACTION_RETENTION=1000
-      - ETCD_QUOTA_BACKEND_BYTES=4294967296
+      - "6379:6379"
     volumes:
-      - etcd_data:/etcd
-    command: etcd -advertise-client-urls=http://127.0.0.1:2379 -listen-client-urls http://0.0.0.0:2379
-    healthcheck:
-      test: ["CMD", "etcdctl", "endpoint", "health"]
-      interval: 30s
-      timeout: 20s
-      retries: 3
-
-  minio:
-    container_name: chat-support-agent-minio
-    image: minio/minio:RELEASE.2023-03-20T20-16-18Z
-    environment:
-      - MINIO_ACCESS_KEY=minioadmin
-      - MINIO_SECRET_KEY=minioadmin
-    volumes:
-      - minio_data:/data
-    command: minio server /data
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
-      interval: 30s
-      timeout: 20s
-      retries: 3
+      - redis_data:/data
 
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:7.9.3
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.10.4
     environment:
       - discovery.type=single-node
     ports:
       - "9200:9200"
     volumes:
       - elasticsearch_data:/usr/share/elasticsearch/data
-    networks:
-      - default
 
 volumes:
   postgres_data:
   redis_data:
   elasticsearch_data:
-  milvus_data:
-  minio_data:
-  huggingface_cache:  # Persistent volume for huggingface cache
-  etcd_data:
-
-networks:
-  default:
-    name: chat-support-agent-network
-    driver: bridge
